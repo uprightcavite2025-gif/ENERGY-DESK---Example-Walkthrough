@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FuelEU Practical Example (Interactive)</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#101a33;
+      --card2:#0f1730;
+      --text:#e9f0ff;
+      --muted:#b9c6ffcc;
+      --line:#2a3a6a;
+      --accent:#3FC2C2;      /* Atria turquoise */
+      --accent2:#63F8EF;     /* Atria neon */
+      --good:#86f7a7;
+      --warn:#ffce6a;
+      --bad:#ff7b8b;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(1100px 650px at 18% 8%, rgba(99,248,239,.12), transparent 60%),
+        radial-gradient(900px 600px at 85% 0%, rgba(63,194,194,.12), transparent 55%),
+        linear-gradient(180deg, #070b16, var(--bg));
+      padding:18px;
+    }
+    .wrap{max-width:1100px;margin:0 auto}
+    .header{padding:6px 6px 12px}
+    h1{margin:0;font-size:clamp(20px,2.6vw,30px);line-height:1.15;letter-spacing:.2px}
+    .sub{margin:8px 0 0;color:var(--muted);max-width:92ch;font-size:14px}
+    .grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:14px;
+    }
+    @media(min-width:920px){
+      .grid{grid-template-columns: 1.05fr .95fr;}
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(16,26,51,.85), rgba(15,23,48,.85));
+      border: 1px solid rgba(42,58,106,.8);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .head{
+      padding:14px 14px 12px;
+      border-bottom:1px solid rgba(42,58,106,.65);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    }
+    .head h2{margin:0;font-size:15px;letter-spacing:.2px}
+    .badge{
+      font-size:12px;
+      color:var(--muted);
+      border:1px solid rgba(42,58,106,.75);
+      padding:6px 10px;
+      border-radius:999px;
+      display:flex;gap:8px;align-items:center;
+      background: rgba(7,11,22,.25);
+      user-select:none;
+    }
+    .dot{width:8px;height:8px;border-radius:50%}
+    .dot.accent{background:var(--accent)}
+    .dot.warn{background:var(--warn)}
+    .dot.good{background:var(--good)}
+    .body{padding:14px}
+
+    /* Mini voyage visual */
+    .voy{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+      padding:12px;border-radius:16px;
+      border:1px solid rgba(42,58,106,.75);
+      background: rgba(7,11,22,.22);
+    }
+    .port{
+      flex:1;
+      min-width:180px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(42,58,106,.65);
+      background: rgba(16,26,51,.35);
+    }
+    .port .name{font-weight:800}
+    .port .tag{
+      margin-top:6px;
+      display:inline-block;
+      font-family:var(--mono);
+      font-size:11px;
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid rgba(42,58,106,.8);
+      color:var(--muted);
+      background: rgba(7,11,22,.22);
+    }
+    .arrow{
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      gap:6px;
+      color:rgba(185,198,255,.65);
+      user-select:none;
+      min-width:100px;
+    }
+    .arrow .line{
+      height:2px;width:80px;background: rgba(42,58,106,.75);
+      position:relative;border-radius:999px;
+    }
+    .arrow .line:after{
+      content:"";
+      position:absolute;right:-2px;top:50%;
+      transform: translateY(-50%) rotate(45deg);
+      width:10px;height:10px;border-right:2px solid rgba(185,198,255,.65);
+      border-top:2px solid rgba(185,198,255,.65);
+    }
+    .scopePill{
+      padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(255,206,106,.55);
+      font-size:12px;
+      background: rgba(255,206,106,.10);
+      color: var(--text);
+      font-family:var(--mono);
+    }
+
+    /* Steps */
+    .steps{
+      display:flex;flex-direction:column;gap:10px;margin-top:12px;
+    }
+    details.step{
+      border:1px solid rgba(42,58,106,.75);
+      background: rgba(7,11,22,.18);
+      border-radius:16px;
+      overflow:hidden;
+    }
+    details.step[open]{background: rgba(7,11,22,.28); border-color: rgba(63,194,194,.55);}
+    summary{
+      list-style:none;
+      padding:12px;
+      cursor:pointer;
+      display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+    }
+    summary::-webkit-details-marker{display:none}
+    .sLeft{
+      display:flex;gap:10px;align-items:flex-start;min-width:0;
+    }
+    .num{
+      width:28px;height:28px;border-radius:10px;
+      display:grid;place-items:center;
+      background: rgba(63,194,194,.12);
+      border:1px solid rgba(63,194,194,.35);
+      color: var(--accent2);
+      font-family:var(--mono);
+      font-size:12px;
+      flex:0 0 auto;
+      margin-top:1px;
+    }
+    .ttl{display:flex;flex-direction:column;gap:4px;min-width:0}
+    .ttl strong{font-size:13px}
+    .ttl span{font-size:12px;color:var(--muted);line-height:1.35}
+    .kpis{
+      display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;
+      align-items:center;
+    }
+    .kpi{
+      padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(42,58,106,.75);
+      font-size:12px;
+      color:var(--muted);
+      background: rgba(16,26,51,.35);
+      font-family:var(--mono);
+      white-space:nowrap;
+    }
+    .content{
+      padding:0 12px 12px;
+      border-top:1px solid rgba(42,58,106,.55);
+    }
+    .math{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px dashed rgba(42,58,106,.85);
+      background: rgba(16,26,51,.35);
+      font-family:var(--mono);
+      font-size:12px;
+      line-height:1.55;
+      white-space:pre-wrap;
+      overflow:auto;
+    }
+
+    /* Right panel: controls + final */
+    .two{
+      display:grid;grid-template-columns:1fr;gap:12px;
+    }
+    .box{
+      padding:12px;border-radius:16px;
+      border:1px solid rgba(42,58,106,.75);
+      background: rgba(7,11,22,.22);
+    }
+    .box h3{margin:0 0 8px 0;font-size:13px;display:flex;align-items:center;gap:8px}
+    label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+    input, select{
+      width:100%;
+      padding:11px 12px;
+      border-radius:12px;
+      border:1px solid rgba(42,58,106,.9);
+      background: rgba(7,11,22,.35);
+      color:var(--text);
+      outline:none;
+      font-size:14px;
+    }
+    input:focus, select:focus{
+      border-color: rgba(63,194,194,.85);
+      box-shadow: 0 0 0 4px rgba(63,194,194,.14);
+    }
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .row > *{flex:1; min-width:160px}
+    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    button{
+      border:none;
+      border-radius:14px;
+      padding:11px 12px;
+      font-weight:700;
+      cursor:pointer;
+      background: linear-gradient(90deg, rgba(63,194,194,.95), rgba(99,248,239,.9));
+      color:#061018;
+      box-shadow: 0 10px 25px rgba(0,0,0,.3);
+      flex:1;
+      min-width:160px;
+    }
+    button.secondary{
+      background: rgba(7,11,22,.35);
+      border:1px solid rgba(42,58,106,.9);
+      color:var(--text);
+      box-shadow:none;
+    }
+
+    .result{
+      padding:12px;border-radius:16px;
+      border:1px solid rgba(42,58,106,.75);
+      background: rgba(7,11,22,.22);
+      display:flex;flex-direction:column;gap:10px;
+    }
+    .big{
+      font-size:20px;font-weight:900;
+      display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+    }
+    .unit{font-size:12px;color:var(--muted);font-family:var(--mono)}
+    .status{
+      display:inline-flex;gap:8px;align-items:center;
+      font-size:12px;
+      padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(42,58,106,.75);
+      background: rgba(16,26,51,.35);
+      color:var(--muted);
+      width:fit-content;
+    }
+    .meter{
+      height:12px;border-radius:999px;
+      background: rgba(255,255,255,.08);
+      overflow:hidden;
+      border:1px solid rgba(42,58,106,.55);
+    }
+    .meter > div{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, rgba(134,247,167,.95), rgba(255,206,106,.95), rgba(255,123,139,.95));
+      transition: width .45s ease;
+    }
+    .hint{font-size:12px;color:var(--muted);line-height:1.45}
+    .takeaway{
+      padding:12px;border-radius:16px;
+      border:1px solid rgba(63,194,194,.35);
+      background: rgba(63,194,194,.10);
+      font-size:13px;
+      line-height:1.5;
+    }
+    .takeaway strong{color:var(--accent2)}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="header">
+      <h1>A Practical FuelEU Example (Interactive Visual)</h1>
+      <p class="sub">
+        Voyage: <strong>Manzanillo (non-EU) → Flushing (EU)</strong> → FuelEU counts <strong>50% of emissions</strong> for this leg.
+        Tap the steps to see what happens, and adjust inputs to see how the final compliance result changes.
+      </p>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT: Flow -->
+      <section class="card">
+        <div class="head">
+          <h2>Walkthrough steps (tap to open)</h2>
+          <div class="badge"><span class="dot accent"></span>Uses your example numbers</div>
+        </div>
+        <div class="body">
+          <div class="voy" aria-label="Voyage visual">
+            <div class="port">
+              <div class="name">Manzanillo</div>
+              <span class="tag">non-EU</span>
+            </div>
+            <div class="arrow">
+              <div class="line"></div>
+              <div class="scopePill">scope × <span id="scopePill">0.5</span></div>
+            </div>
+            <div class="port">
+              <div class="name">Flushing</div>
+              <span class="tag">EU</span>
+            </div>
+          </div>
+
+          <div class="steps">
+            <details class="step" open>
+              <summary>
+                <div class="sLeft">
+                  <div class="num">1</div>
+                  <div class="ttl">
+                    <strong>Fuel Used</strong>
+                    <span>Two fuels, different classes → different factors.</span>
+                  </div>
+                </div>
+                <div class="kpis">
+                  <span class="kpi">ULSFO: <span id="k_u_qty">59.062</span> mt</span>
+                  <span class="kpi">VLSFO: <span id="k_v_qty">506.800</span> mt</span>
+                </div>
+              </summary>
+              <div class="content">
+                <div class="math" id="m1"></div>
+              </div>
+            </details>
+
+            <details class="step">
+              <summary>
+                <div class="sLeft">
+                  <div class="num">2</div>
+                  <div class="ttl">
+                    <strong>CO₂ at the funnel (Tank-to-Wake)</strong>
+                    <span>Fuel used × CO₂ factor</span>
+                  </div>
+                </div>
+                <div class="kpis">
+                  <span class="kpi">ULSFO CO₂: <span id="k_u_co2">186.104</span></span>
+                  <span class="kpi">VLSFO CO₂: <span id="k_v_co2">1578.175</span></span>
+                </div>
+              </summary>
+              <div class="content">
+                <div class="math" id="m2"></div>
+              </div>
+            </details>
+
+            <details class="step">
+              <summary>
+                <div class="sLeft">
+                  <div class="num">3</div>
+                  <div class="ttl">
+                    <strong>Add CH₄ + N₂O → convert to CO₂eq</strong>
+                    <span>Apply GWP multipliers (CH₄ and N₂O are stronger than CO₂).</span>
+                  </div>
+                </div>
+                <div class="kpis">
+                  <span class="kpi">ULSFO: <span id="k_u_co2eq">189.345</span> CO₂eq</span>
+                  <span class="kpi">VLSFO: <span id="k_v_co2eq">1605.993</span> CO₂eq</span>
+                </div>
+              </summary>
+              <div class="content">
+                <div class="math" id="m3"></div>
+              </div>
+            </details>
+
+            <details class="step">
+              <summary>
+                <div class="sLeft">
+                  <div class="num">4</div>
+                  <div class="ttl">
+                    <strong>Apply 50% scope</strong>
+                    <span>Non-EU → EU voyage counts only half.</span>
+                  </div>
+                </div>
+                <div class="kpis">
+                  <span class="kpi">ULSFO: <span id="k_u_scope">94.673</span></span>
+                  <span class="kpi">VLSFO: <span id="k_v_scope">802.997</span></span>
+                </div>
+              </summary>
+              <div class="content">
+                <div class="math" id="m4"></div>
+              </div>
+            </details>
+
+            <details class="step">
+              <summary>
+                <div class="sLeft">
+                  <div class="num">5</div>
+                  <div class="ttl">
+                    <strong>Convert fuel to energy (MJ)</strong>
+                    <span>FuelEU compares emissions per energy, not per tonne.</span>
+                  </div>
+                </div>
+                <div class="kpis">
+                  <span class="kpi">ULSFO MJ: <span id="k_u_mj">2.422</span></span>
+                  <span class="kpi">VLSFO MJ: <span id="k_v_mj">20.525</span></span>
+                </div>
+              </summary>
+              <div class="content">
+                <div class="math" id="m5"></div>
+              </div>
+            </details>
+
+            <details class="step">
+              <summary>
+                <div class="sLeft">
+                  <div class="num">6</div>
+                  <div class="ttl">
+                    <strong>Add Well-to-Tank emissions</strong>
+                    <span>Production + delivery emissions are included.</span>
+                  </div>
+                </div>
+                <div class="kpis">
+                  <span class="kpi">ULSFO: <span id="k_u_wtt">15.982</span></span>
+                  <span class="kpi">VLSFO: <span id="k_v_wtt">138.546</span></span>
+                </div>
+              </summary>
+              <div class="content">
+                <div class="math" id="m6"></div>
+              </div>
+            </details>
+
+            <details class="step">
+              <summary>
+                <div class="sLeft">
+                  <div class="num">7</div>
+                  <div class="ttl">
+                    <strong>Final GHG intensity</strong>
+                    <span>(Lifecycle emissions) ÷ (Energy used)</span>
+                  </div>
+                </div>
+                <div class="kpis">
+                  <span class="kpi">Result: <span id="k_int">91.707</span> gCO₂eq/MJ</span>
+                </div>
+              </summary>
+              <div class="content">
+                <div class="math" id="m7"></div>
+              </div>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Controls + Results -->
+      <section class="card">
+        <div class="head">
+          <h2>Try “what changes what”</h2>
+          <div class="badge"><span class="dot warn"></span>Small input changes → big result</div>
+        </div>
+        <div class="body">
+          <div class="box">
+            <h3>🚢 Voyage scope</h3>
+            <label for="scope">Scope factor</label>
+            <select id="scope">
+              <option value="0.5" selected>Non-EU → EU (50%)</option>
+              <option value="1">EU → EU (100%)</option>
+              <option value="0">Non-EU → Non-EU (0%)</option>
+            </select>
+            <p class="hint" style="margin:8px 0 0">
+              Scope changes what is <strong>counted</strong>, not what the ship emitted.
+            </p>
+          </div>
+
+          <div class="box" style="margin-top:12px">
+            <h3>⛽ Fuel inputs (edit to see impact)</h3>
+            <div class="row">
+              <div>
+                <label for="u_qty">ULSFO qty (mt)</label>
+                <input id="u_qty" type="number" step="0.001" value="59.062" />
+              </div>
+              <div>
+                <label for="v_qty">VLSFO qty (mt)</label>
+                <input id="v_qty" type="number" step="0.001" value="506.800" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="u_co2f">ULSFO CO₂ factor</label>
+                <input id="u_co2f" type="number" step="0.001" value="3.151" />
+              </div>
+              <div>
+                <label for="v_co2f">VLSFO CO₂ factor</label>
+                <input id="v_co2f" type="number" step="0.001" value="3.114" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label for="u_co2eq_total">ULSFO total CO₂eq (after GWP)</label>
+                <input id="u_co2eq_total" type="number" step="0.001" value="189.345" />
+              </div>
+              <div>
+                <label for="v_co2eq_total">VLSFO total CO₂eq (after GWP)</label>
+                <input id="v_co2eq_total" type="number" step="0.001" value="1605.993" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label for="u_mj">ULSFO energy (MJ scale)</label>
+                <input id="u_mj" type="number" step="0.001" value="2.422" />
+              </div>
+              <div>
+                <label for="v_mj">VLSFO energy (MJ scale)</label>
+                <input id="v_mj" type="number" step="0.001" value="20.525" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label for="u_wtt">ULSFO WtT (mt CO₂eq)</label>
+                <input id="u_wtt" type="number" step="0.001" value="15.982" />
+              </div>
+              <div>
+                <label for="v_wtt">VLSFO WtT (mt CO₂eq)</label>
+                <input id="v_wtt" type="number" step="0.001" value="138.546" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label for="target">Target (example year)</label>
+                <input id="target" type="number" step="0.01" value="89.34" />
+              </div>
+            </div>
+
+            <div class="btns">
+              <button id="recalc">Recalculate</button>
+              <button id="reset" class="secondary">Reset example</button>
+            </div>
+          </div>
+
+          <div class="result" style="margin-top:12px">
+            <div class="big">
+              <span id="intensity">91.707</span>
+              <span class="unit">gCO₂eq/MJ</span>
+            </div>
+            <div class="status" id="statusPill">
+              <span class="dot warn"></span>
+              <span id="statusText">Deficit (above target)</span>
+            </div>
+            <div class="meter"><div id="meterFill"></div></div>
+            <div class="hint" id="gapHint"></div>
+
+            <div class="math" id="finalMath"></div>
+          </div>
+
+          <div class="takeaway" style="margin-top:12px">
+            <strong>Key takeaway:</strong> You do NOT calculate this onboard. But small differences in fuel type, quantity accuracy, voyage leg classification, and BDN/ROB consistency directly influence the final compliance result.
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const num = (v, fallback=0) => {
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? n : fallback;
+    };
+    const fmt = (v, d=3) => (Number.isFinite(v) ? v.toFixed(d) : "—");
+
+    const DEFAULTS = {
+      scope: 0.5,
+      u_qty: 59.062,
+      v_qty: 506.800,
+      u_co2f: 3.151,
+      v_co2f: 3.114,
+      u_co2eq_total: 189.345,
+      v_co2eq_total: 1605.993,
+      u_mj: 2.422,
+      v_mj: 20.525,
+      u_wtt: 15.982,
+      v_wtt: 138.546,
+      target: 89.34
+    };
+
+    function resetExample(){
+      $("scope").value = String(DEFAULTS.scope);
+      $("u_qty").value = DEFAULTS.u_qty;
+      $("v_qty").value = DEFAULTS.v_qty;
+      $("u_co2f").value = DEFAULTS.u_co2f;
+      $("v_co2f").value = DEFAULTS.v_co2f;
+      $("u_co2eq_total").value = DEFAULTS.u_co2eq_total;
+      $("v_co2eq_total").value = DEFAULTS.v_co2eq_total;
+      $("u_mj").value = DEFAULTS.u_mj;
+      $("v_mj").value = DEFAULTS.v_mj;
+      $("u_wtt").value = DEFAULTS.u_wtt;
+      $("v_wtt").value = DEFAULTS.v_wtt;
+      $("target").value = DEFAULTS.target;
+      recalc();
+    }
+
+    function recalc(){
+      const scope = num($("scope").value, 0.5);
+      $("scopePill").textContent = scope.toFixed(1);
+
+      const u_qty = num($("u_qty").value);
+      const v_qty = num($("v_qty").value);
+      const u_co2f = num($("u_co2f").value);
+      const v_co2f = num($("v_co2f").value);
+
+      // Step 2 values (derived)
+      const u_co2 = u_qty * u_co2f;
+      const v_co2 = v_qty * v_co2f;
+
+      // Step 3 totals (user-provided totals after GWP, as per your practical example summary)
+      const u_total = num($("u_co2eq_total").value);
+      const v_total = num($("v_co2eq_total").value);
+
+      // Step 4 scope applied
+      const u_scoped = u_total * scope;
+      const v_scoped = v_total * scope;
+
+      // Step 5 energy (user-provided energy scale)
+      const u_mj = num($("u_mj").value);
+      const v_mj = num($("v_mj").value);
+
+      // Step 6 WtT (user-provided WtT amounts)
+      const u_wtt = num($("u_wtt").value);
+      const v_wtt = num($("v_wtt").value);
+
+      // Step 7 intensity uses your structure:
+      // (Scoped TTW + Scoped WtT) ÷ (Scoped energy total)
+      const numerator = (u_scoped + v_scoped + u_wtt + v_wtt);
+      const denom = scope * (u_mj + v_mj);
+      const intensity = denom !== 0 ? numerator / denom : NaN;
+
+      // Target check
+      const target = num($("target").value);
+      const deficit = intensity > target;
+      const diff = Math.abs(intensity - target);
+
+      // Update left KPIs
+      $("k_u_qty").textContent = fmt(u_qty,3);
+      $("k_v_qty").textContent = fmt(v_qty,3);
+
+      $("k_u_co2").textContent = fmt(u_co2,3);
+      $("k_v_co2").textContent = fmt(v_co2,3);
+
+      $("k_u_co2eq").textContent = fmt(u_total,3);
+      $("k_v_co2eq").textContent = fmt(v_total,3);
+
+      $("k_u_scope").textContent = fmt(u_scoped,3);
+      $("k_v_scope").textContent = fmt(v_scoped,3);
+
+      $("k_u_mj").textContent = fmt(u_mj,3);
+      $("k_v_mj").textContent = fmt(v_mj,3);
+
+      $("k_u_wtt").textContent = fmt(u_wtt,3);
+      $("k_v_wtt").textContent = fmt(v_wtt,3);
+
+      $("k_int").textContent = fmt(intensity,3);
+
+      // Math blocks (simple + aligned to your narrative)
+      $("m1").textContent =
+`Two fuels:
+• ${fmt(u_qty,3)} mt ULSFO (LFO class)
+• ${fmt(v_qty,3)} mt VLSFO (HFO class)
+
+Different fuel class → different emission factors.`;
+
+      $("m2").textContent =
+`ULSFO CO₂:
+${fmt(u_qty,3)} × ${fmt(u_co2f,3)} = ${fmt(u_co2,3)} mt CO₂
+
+VLSFO CO₂:
+${fmt(v_qty,3)} × ${fmt(v_co2f,3)} = ${fmt(v_co2,3)} mt CO₂`;
+
+      $("m3").textContent =
+`After adding CH₄ + N₂O and converting to CO₂eq:
+ULSFO total = ${fmt(u_total,3)} mt CO₂eq
+VLSFO total = ${fmt(v_total,3)} mt CO₂eq`;
+
+      $("m4").textContent =
+`Voyage scope = ${scope}
+
+ULSFO scoped:
+${fmt(u_total,3)} × ${scope} = ${fmt(u_scoped,3)} mt CO₂eq
+
+VLSFO scoped:
+${fmt(v_total,3)} × ${scope} = ${fmt(v_scoped,3)} mt CO₂eq`;
+
+      $("m5").textContent =
+`Energy conversion (MJ scale, from standard calorific values):
+ULSFO energy = ${fmt(u_mj,3)}
+VLSFO energy = ${fmt(v_mj,3)}
+
+FuelEU compares emissions per MJ.`;
+
+      $("m6").textContent =
+`Well-to-Tank (fuel production) emissions added:
+ULSFO WtT = ${fmt(u_wtt,3)} mt CO₂eq
+VLSFO WtT = ${fmt(v_wtt,3)} mt CO₂eq`;
+
+      $("m7").textContent =
+`Final GHG intensity:
+
+Numerator (lifecycle emissions):
+(${fmt(u_scoped,3)} + ${fmt(v_scoped,3)} + ${fmt(u_wtt,3)} + ${fmt(v_wtt,3)})
+= ${fmt(numerator,3)}
+
+Denominator (scoped energy):
+${scope} × (${fmt(u_mj,3)} + ${fmt(v_mj,3)})
+= ${fmt(denom,3)}
+
+Intensity:
+${fmt(numerator,3)} ÷ ${fmt(denom,3)} = ${fmt(intensity,3)} gCO₂eq/MJ`;
+
+      // Right panel result
+      $("intensity").textContent = fmt(intensity,3);
+
+      const statusPill = $("statusPill");
+      const statusText = $("statusText");
+      if(deficit){
+        statusText.textContent = "Deficit (above target)";
+        statusPill.style.borderColor = "rgba(255,123,139,.55)";
+        statusPill.style.background = "rgba(255,123,139,.10)";
+      } else {
+        statusText.textContent = "Surplus (below target)";
+        statusPill.style.borderColor = "rgba(134,247,167,.55)";
+        statusPill.style.background = "rgba(134,247,167,.10)";
+      }
+
+      // Meter fill (visual only)
+      const pct = Math.max(0, Math.min(100, (diff / Math.max(1, target)) * 250));
+      $("meterFill").style.width = pct + "%";
+
+      $("gapHint").textContent =
+        deficit
+          ? `Above target by ${fmt(intensity - target,3)} intensity units → compliance deficit risk.`
+          : `Below target by ${fmt(target - intensity,3)} intensity units → compliance surplus.`;
+
+      $("finalMath").textContent =
+`FuelEU intensity is built like this:
+(lifecycle emissions ÷ energy used)
+
+Lifecycle emissions include:
+• Tank-to-Wake (onboard) CO₂eq
+• Well-to-Tank (production) CO₂eq
+
+So clean inputs onboard protect the final compliance result.`;
+    }
+
+    // Watch changes
+    const watch = ["scope","u_qty","v_qty","u_co2f","v_co2f","u_co2eq_total","v_co2eq_total","u_mj","v_mj","u_wtt","v_wtt","target"];
+    watch.forEach(id => $(id).addEventListener("input", recalc));
+    $("recalc").addEventListener("click", recalc);
+    $("reset").addEventListener("click", resetExample);
+
+    // Init
+    recalc();
+  </script>
+</body>
+</html>
